@@ -88,29 +88,70 @@ function App() {
 
       <main className="content">
         {activeSection === 'profile' && (
-          <section className="profile">
-            <h2>Profile</h2>
-            <div className="profile-card">
-              <div className="profile-info">
-                <h3>Welcome to GameLayer</h3>
-                <p>Complete missions to earn points and redeem prizes!</p>
+          <div className="section">
+            {loading ? (
+              <div className="loading">Loading profile...</div>
+            ) : error ? (
+              <div className="error">{error}</div>
+            ) : players.length > 0 ? (
+              <div className="profile-card">
+                <div className="profile-header">
+                  <div className="profile-avatar">
+                    <img 
+                      src={String(players[0].imgUrl) || 'https://via.placeholder.com/150'} 
+                      alt={String(players[0].name) || 'Player'} 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/150';
+                      }}
+                    />
+                  </div>
+                  <div className="profile-title">
+                    <h2>{String(players[0].name) || 'Player Name'}</h2>
+                    {players[0].team && (
+                      <div className="profile-team">
+                        <span className="team-label">Team</span>
+                        <span className="team-name">{String(players[0].team)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className="profile-stats">
-                  <button 
-                    className="stat-button"
-                    onClick={() => setActiveSection('missions')}
-                  >
-                    Total Missions: {missions.length}
+                  <div className="stat-card">
+                    <div className="stat-icon">🏆</div>
+                    <div className="stat-content">
+                      <span className="stat-value">{Number(players[0].points) || 0}</span>
+                      <span className="stat-label">Points</span>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon">💰</div>
+                    <div className="stat-content">
+                      <span className="stat-value">{Number(players[0].credits) || 0}</span>
+                      <span className="stat-label">Credits</span>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon">⭐</div>
+                    <div className="stat-content">
+                      <span className="stat-value">{Number(players[0].level) || 1}</span>
+                      <span className="stat-label">Level</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="profile-actions">
+                  <button className="action-button" onClick={() => setActiveSection('missions')}>
+                    View Missions ({Number(missions.length) || 0})
                   </button>
-                  <button 
-                    className="stat-button"
-                    onClick={() => setActiveSection('prizes')}
-                  >
-                    Available Prizes: {prizes.length}
+                  <button className="action-button" onClick={() => setActiveSection('prizes')}>
+                    View Prizes ({Number(prizes.length) || 0})
                   </button>
                 </div>
               </div>
-            </div>
-          </section>
+            ) : (
+              <div className="no-data">No player data available</div>
+            )}
+          </div>
         )}
         
         {activeSection === 'missions' && (
@@ -124,8 +165,8 @@ function App() {
                   <div key={`mission-${index}`} className="card">
                     {mission.imgUrl && (
                       <img 
-                        src={mission.imgUrl} 
-                        alt={mission.name || 'Mission image'} 
+                        src={String(mission.imgUrl)} 
+                        alt={String(mission.name || 'Mission image')} 
                         className="card-image"
                         onError={(e) => {
                           e.target.style.display = 'none';
@@ -133,11 +174,11 @@ function App() {
                       />
                     )}
                     <div className="card-content">
-                      <h3>{mission.name || 'Unnamed Mission'}</h3>
-                      <p>{mission.description || 'No description available'}</p>
+                      <h3>{String(mission.name || 'Unnamed Mission')}</h3>
+                      <p>{String(mission.description || 'No description available')}</p>
                       <div className="mission-details">
-                        <span className="points">Points: {mission.reward?.points || 0}</span>
-                        <span className="credits">Credits: {mission.reward?.credits || 0}</span>
+                        <span className="points">Points: {Number(mission.reward?.points || 0)}</span>
+                        <span className="credits">Credits: {Number(mission.reward?.credits || 0)}</span>
                         <p>Available until: {mission.active?.to ? new Date(mission.active.to).toLocaleDateString() : 'No expiry'}</p>
                       </div>
                       <button className="go-button">GO!</button>
@@ -160,8 +201,8 @@ function App() {
                   <div key={`prize-${index}`} className="card">
                     {prize.imgUrl && (
                       <img 
-                        src={prize.imgUrl} 
-                        alt={prize.name || 'Prize image'} 
+                        src={String(prize.imgUrl)} 
+                        alt={String(prize.name || 'Prize image')} 
                         className="card-image"
                         onError={(e) => {
                           e.target.style.display = 'none';
@@ -169,11 +210,11 @@ function App() {
                       />
                     )}
                     <div className="card-content">
-                      <h3>{prize.name || 'Unnamed Prize'}</h3>
-                      <p>{prize.description || 'No description available'}</p>
+                      <h3>{String(prize.name || 'Unnamed Prize')}</h3>
+                      <p>{String(prize.description || 'No description available')}</p>
                       <div className="prize-details">
-                        <span className="credits">Credits: {prize.points_required || 0}</span>
-                        <span className="stock">Stock: {prize.stock?.available || 'Unlimited'}</span>
+                        <span className="credits">Credits: {Number(prize.points_required || 0)}</span>
+                        <span className="stock">Stock: {String(prize.stock?.available || 'Unlimited')}</span>
                         <p>Available until: {prize.active?.to ? new Date(prize.active.to).toLocaleDateString() : 'No expiry'}</p>
                       </div>
                       <button className="collect-button">Collect!</button>
