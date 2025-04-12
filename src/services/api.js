@@ -74,47 +74,6 @@ export const fetchPrizes = async () => {
   }
 };
 
-export const fetchLeaderboard = async () => {
-  try {
-    const url = `${API_BASE_URL}/leaderboard?account=${ACCOUNT_ID}`;
-    const response = await fetch(url, {
-      headers: baseHeaders
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Leaderboard Error:', errorText);
-      throw new Error('Failed to fetch leaderboard');
-    }
-
-    const data = await response.json();
-    console.log('Leaderboard API Response:', JSON.stringify(data, null, 2));
-    
-    // If data is already in the correct format with entries array, return it
-    if (data && Array.isArray(data.entries)) {
-      return data;
-    }
-    
-    // If data is an array, wrap it in the expected format
-    if (Array.isArray(data)) {
-      return {
-        entries: data.map(entry => ({
-          player_id: entry.name || entry.id || 'Unknown Player',
-          score: entry.points || 0,
-          image: entry.imgUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.id}`
-        }))
-      };
-    }
-    
-    // Return empty entries if no valid data
-    console.warn('Unexpected leaderboard data format:', data);
-    return { entries: [] };
-  } catch (error) {
-    console.error('Error fetching leaderboard:', error);
-    throw error;
-  }
-};
-
 export const fetchPlayers = async () => {
   try {
     const url = `${API_BASE_URL}/players?account=${ACCOUNT_ID}`;

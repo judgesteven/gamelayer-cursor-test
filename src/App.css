@@ -52,16 +52,17 @@ body {
   color: var(--text-color);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .navigation button:hover {
-  background-color: var(--primary-color);
-  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .navigation button.active {
+  animation: pulse 1s infinite;
   background-color: var(--primary-color);
   color: white;
 }
@@ -84,12 +85,14 @@ body {
   background-color: #ffebee;
   border-radius: 4px;
   margin-bottom: 1rem;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .loading {
   text-align: center;
   padding: 2rem;
   color: var(--text-color);
+  animation: bounce 1s infinite;
 }
 
 .grid {
@@ -104,14 +107,16 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   margin-bottom: 20px;
-  transition: transform 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   height: 100%;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .card-image {
@@ -207,7 +212,7 @@ body {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: auto;
   align-self: flex-start;
   width: 100%;
@@ -215,8 +220,12 @@ body {
 }
 
 .go-button:hover {
-  background-color: #45a049;
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.go-button:active {
+  transform: translateY(1px) scale(0.98);
 }
 
 .mission-details, .prize-details {
@@ -250,6 +259,7 @@ body {
   background-color: #f1f5f9;
   border-radius: 0.5rem;
   margin: 1rem 0;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .profile {
@@ -281,17 +291,15 @@ body {
   border-radius: 4px;
   border: 1px solid var(--border-color);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: left;
   font-size: 0.9rem;
   color: var(--text-color);
 }
 
 .stat-button:hover {
-  background-color: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .missions-section, .prizes-section {
@@ -331,7 +339,7 @@ body {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: auto;
   align-self: flex-start;
   width: 100%;
@@ -339,8 +347,12 @@ body {
 }
 
 .collect-button:hover {
-  background-color: #1e40af;
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.collect-button:active {
+  transform: translateY(1px) scale(0.98);
 }
 
 .leaderboard-section {
@@ -371,8 +383,10 @@ body {
   gap: 20px;
   padding: 16px;
   border-bottom: 1px solid var(--border-color);
-  transition: background-color 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
+  animation: slideIn 0.3s ease-out;
+  animation-fill-mode: both;
 }
 
 .player-info {
@@ -386,6 +400,7 @@ body {
   height: 32px;
   border-radius: 50%;
   background-color: #f8fafc;
+  transition: all 0.3s ease;
 }
 
 .player-name {
@@ -398,11 +413,19 @@ body {
 }
 
 .leaderboard-row:hover {
-  background-color: #f8fafc;
+  transform: scale(1.02);
+  background-color: #f0f9ff;
+  transition: all 0.2s ease;
 }
 
 .leaderboard-row .rank {
   font-weight: bold;
+  color: var(--primary-color);
+  transition: all 0.2s ease;
+}
+
+.leaderboard-row:hover .rank {
+  transform: scale(1.2);
   color: var(--primary-color);
 }
 
@@ -431,11 +454,13 @@ body {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  transition: transform 0.2s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeIn 0.5s ease-out;
 }
 
 .player-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-8px) rotate(1deg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .player-card-header {
@@ -450,6 +475,7 @@ body {
   height: 60px;
   border-radius: 50%;
   object-fit: cover;
+  transition: all 0.3s ease;
 }
 
 .player-card-header h3 {
@@ -485,28 +511,143 @@ body {
   font-weight: 600;
 }
 
+.player-card:hover .player-card-avatar {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+/* Base animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Apply animations to components */
+.content section {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.navigation button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navigation button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.navigation button.active {
+  animation: pulse 1s infinite;
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.go-button, .collect-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.go-button:hover, .collect-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.go-button:active, .collect-button:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.player-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.player-card:hover {
+  transform: translateY(-8px) rotate(1deg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.player-card-avatar {
+  transition: all 0.3s ease;
+}
+
+.player-card:hover .player-card-avatar {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.leaderboard-row {
+  animation: slideIn 0.3s ease-out;
+  animation-fill-mode: both;
+}
+
+.leaderboard-row:hover {
+  transform: scale(1.02);
+  background-color: #f0f9ff;
+  transition: all 0.2s ease;
+}
+
+.rank {
+  transition: all 0.2s ease;
+}
+
+.leaderboard-row:hover .rank {
+  transform: scale(1.2);
+  color: var(--primary-color);
+}
+
+.stat-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
 .loading {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  font-size: 1.1rem;
+  animation: bounce 1s infinite;
 }
 
 .error {
-  text-align: center;
-  padding: 40px;
-  color: #dc3545;
-  font-size: 1.1rem;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
+  animation: fadeIn 0.3s ease-out;
 }
 
 .no-data {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  font-size: 1.1rem;
-  background: #f8f9fa;
-  border-radius: 8px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Stagger animation for grid items */
+.grid > *, .players-grid > * {
+  animation: fadeIn 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
