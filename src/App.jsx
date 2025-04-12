@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { fetchMissions, fetchPrizes, fetchPlayers } from './services/api'
+import { fetchMissions, fetchPrizes, fetchPlayers, fetchTeam } from './services/api'
 
 function App() {
   const [activeSection, setActiveSection] = useState('profile')
@@ -9,6 +9,7 @@ function App() {
   const [players, setPlayers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [teams, setTeams] = useState({})
 
   useEffect(() => {
     const loadData = async () => {
@@ -23,11 +24,32 @@ function App() {
           fetchPlayers()
         ])
         
-        console.log('Received players data:', playersData)
+        console.log('Players data structure:', JSON.stringify(playersData, null, 2))
         
         setMissions(missionsData || [])
         setPrizes(prizesData || [])
         setPlayers(Array.isArray(playersData) ? playersData : [])
+
+        // Fetch team details for each unique team ID
+        const teamIds = new Set();
+        playersData.forEach(player => {
+          if (player.team && player.team.id) {
+            teamIds.add(player.team.id);
+          }
+        });
+
+        const teamPromises = Array.from(teamIds).map(teamId => 
+          fetchTeam(teamId)
+            .then(teamData => ({ [teamId]: teamData }))
+            .catch(error => {
+              console.error(`Error fetching team ${teamId}:`, error);
+              return { [teamId]: { name: `Team ${teamId}` } };
+            })
+        );
+
+        const teamResults = await Promise.all(teamPromises);
+        const teamsMap = teamResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+        setTeams(teamsMap);
       } catch (err) {
         console.error('Error in loadData:', err)
         setError(err.message || 'Failed to load data. Please try again later.')
@@ -38,6 +60,13 @@ function App() {
 
     loadData()
   }, [])
+
+  const getTeamName = (team) => {
+    if (!team) return '';
+    if (typeof team === 'string') return team;
+    if (team.id && teams[team.id]) return teams[team.id].name;
+    return team.id || 'Unknown Team';
+  };
 
   if (loading) {
     return <div className="loading">Loading...</div>
@@ -111,7 +140,7 @@ function App() {
                     {players[0].team && (
                       <div className="profile-team">
                         <span className="team-label">Team</span>
-                        <span className="team-name">{String(players[0].team)}</span>
+                        <span className="team-name">{getTeamName(players[0].team)}</span>
                       </div>
                     )}
                   </div>
@@ -293,20 +322,20 @@ function App() {
                     <div className="player-card-details">
                       <div className="detail-item">
                         <span className="label">Points:</span>
-                        <span className="value">{Number(player.points || 0)}</span>
+                        <span className="value">{Number(player.points) || 0}</span>
                       </div>
                       <div className="detail-item">
                         <span className="label">Credits:</span>
-                        <span className="value">{Number(player.credits || 0)}</span>
+                        <span className="value">{Number(player.credits) || 0}</span>
                       </div>
                       <div className="detail-item">
                         <span className="label">Level:</span>
-                        <span className="value">{Number(player.level || 1)}</span>
+                        <span className="value">{Number(player.level) || 1}</span>
                       </div>
                       {player.team && (
                         <div className="detail-item">
                           <span className="label">Team:</span>
-                          <span className="value">{String(player.team)}</span>
+                          <span className="value">{getTeamName(player.team)}</span>
                         </div>
                       )}
                     </div>
