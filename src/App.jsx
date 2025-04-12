@@ -1,22 +1,14 @@
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
-import { fetchMissions, fetchPrizes, fetchLeaderboard, fetchPlayers } from './services/api'
+import { fetchMissions, fetchPrizes, fetchPlayers } from './services/api'
 
 function App() {
   const [activeSection, setActiveSection] = useState('profile')
   const [missions, setMissions] = useState([])
   const [prizes, setPrizes] = useState([])
-  const [leaderboard, setLeaderboard] = useState([])
   const [players, setPlayers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-
-  const getImageUrl = (imageName) => {
-    if (!imageName) return null;
-    return `https://images.gamelayer.co/glimages/new-account-content/${imageName}`;
-  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -25,10 +17,9 @@ function App() {
         setError(null)
         console.log('Starting to load data...')
         
-        const [missionsData, prizesData, leaderboardData, playersData] = await Promise.all([
+        const [missionsData, prizesData, playersData] = await Promise.all([
           fetchMissions(),
           fetchPrizes(),
-          fetchLeaderboard(),
           fetchPlayers()
         ])
         
@@ -36,7 +27,6 @@ function App() {
         
         setMissions(missionsData || [])
         setPrizes(prizesData || [])
-        setLeaderboard(leaderboardData || [])
         setPlayers(Array.isArray(playersData) ? playersData : [])
       } catch (err) {
         console.error('Error in loadData:', err)
