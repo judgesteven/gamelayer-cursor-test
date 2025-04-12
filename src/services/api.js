@@ -1,74 +1,75 @@
 const API_BASE_URL = 'https://api.gamelayer.co/api/v0';
-const ACCOUNT_ID = 'simple-account';
-const API_KEY = '5d144874e97c38153da0f72d754c2f64';
+const ACCOUNT_ID = 'new-account-content';
+const API_KEY = '4cb261227289f22693e1c8e634fa99cf';
 
-const headers = {
-  'Authorization': API_KEY,
+const baseHeaders = {
   'Content-Type': 'application/json',
   'Accept': 'application/json',
-  'X-Account-ID': ACCOUNT_ID
+  'api-key': API_KEY
+};
+
+// Authentication function
+export const authenticate = async () => {
+  try {
+    const url = `${API_BASE_URL}/auth`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: baseHeaders,
+      body: JSON.stringify({
+        account: ACCOUNT_ID,
+        api_key: API_KEY
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Authentication Error:', errorText);
+      throw new Error('Authentication failed');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    throw error;
+  }
 };
 
 export const fetchMissions = async () => {
   try {
-    console.log('Fetching missions...');
-    const url = `${API_BASE_URL}/missions?account_id=${ACCOUNT_ID}`;
-    console.log('Request URL:', url);
-    console.log('Headers:', JSON.stringify(headers, null, 2));
-    
+    const url = `${API_BASE_URL}/missions?account=${ACCOUNT_ID}`;
     const response = await fetch(url, {
-      method: 'GET',
-      headers,
-      mode: 'cors',
-      credentials: 'omit'
+      headers: baseHeaders
     });
-    
-    console.log('Missions response status:', response.status);
-    console.log('Missions response headers:', Object.fromEntries(response.headers.entries()));
-    
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Missions error response:', errorText);
-      throw new Error(`Failed to fetch missions: ${response.status} ${response.statusText}\n${errorText}`);
+      console.error('Missions Error:', errorText);
+      throw new Error('Failed to fetch missions');
     }
-    
-    const data = await response.json();
-    console.log('Missions data:', data);
-    return data;
+
+    return await response.json();
   } catch (error) {
     console.error('Error fetching missions:', error);
-    return [];
+    throw error;
   }
 };
 
 export const fetchPrizes = async () => {
   try {
-    console.log('Fetching prizes...');
-    const url = `${API_BASE_URL}/prizes?account_id=${ACCOUNT_ID}`;
-    console.log('Request URL:', url);
-    console.log('Headers:', JSON.stringify(headers, null, 2));
-    
+    const url = `${API_BASE_URL}/prizes?account=${ACCOUNT_ID}`;
     const response = await fetch(url, {
-      method: 'GET',
-      headers,
-      mode: 'cors',
-      credentials: 'omit'
+      headers: baseHeaders
     });
-    
-    console.log('Prizes response status:', response.status);
-    console.log('Prizes response headers:', Object.fromEntries(response.headers.entries()));
-    
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Prizes error response:', errorText);
-      throw new Error(`Failed to fetch prizes: ${response.status} ${response.statusText}\n${errorText}`);
+      console.error('Prizes Error:', errorText);
+      throw new Error('Failed to fetch prizes');
     }
-    
-    const data = await response.json();
-    console.log('Prizes data:', data);
-    return data;
+
+    return await response.json();
   } catch (error) {
     console.error('Error fetching prizes:', error);
-    return [];
+    throw error;
   }
 }; 
