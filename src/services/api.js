@@ -124,4 +124,37 @@ export const fetchTeam = async (teamId) => {
     console.error('Error fetching team:', error);
     throw error;
   }
+};
+
+export const createPlayer = async (playerData) => {
+  try {
+    const url = `${API_BASE_URL}/players`;
+    const formattedPlayerData = {
+      ...playerData,
+      account: ACCOUNT_ID,
+      level: {
+        current: playerData.level || 1,
+        experience: 0,
+        nextLevel: 100
+      },
+      player: playerData.email // Send email as the player ID string
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: baseHeaders,
+      body: JSON.stringify(formattedPlayerData)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Create Player Error:', errorText);
+      throw new Error('Failed to create player');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error creating player:', error);
+    throw error;
+  }
 }; 
