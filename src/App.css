@@ -204,11 +204,23 @@ body {
   margin-top: 1rem;
 }
 
-.profile-stats p {
+.stat-button {
   background-color: white;
-  padding: 0.5rem;
+  padding: 0.75rem;
   border-radius: 4px;
-  margin: 0;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--text-color);
+}
+
+.stat-button:hover {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
 }
 
 .missions-section, .prizes-section {

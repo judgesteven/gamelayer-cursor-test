@@ -100,8 +100,18 @@ function App() {
                 <h3>Welcome to GameLayer</h3>
                 <p>Complete missions to earn points and redeem prizes!</p>
                 <div className="profile-stats">
-                  <p>Total Missions: {missions.length}</p>
-                  <p>Available Prizes: {prizes.length}</p>
+                  <button 
+                    className="stat-button"
+                    onClick={() => setActiveSection('missions')}
+                  >
+                    Total Missions: {missions.length}
+                  </button>
+                  <button 
+                    className="stat-button"
+                    onClick={() => setActiveSection('prizes')}
+                  >
+                    Available Prizes: {prizes.length}
+                  </button>
                 </div>
               </div>
             </div>
