@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
 import './App.css'
-import { fetchMissions, fetchPrizes } from './services/api'
+import { fetchMissions, fetchPrizes, fetchLeaderboard, fetchPlayers } from './services/api'
 
 function App() {
   const [activeSection, setActiveSection] = useState('profile')
   const [missions, setMissions] = useState([])
   const [prizes, setPrizes] = useState([])
+  const [leaderboard, setLeaderboard] = useState([])
+  const [players, setPlayers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -21,30 +25,19 @@ function App() {
         setError(null)
         console.log('Starting to load data...')
         
-        const [missionsData, prizesData] = await Promise.all([
+        const [missionsData, prizesData, leaderboardData, playersData] = await Promise.all([
           fetchMissions(),
-          fetchPrizes()
+          fetchPrizes(),
+          fetchLeaderboard(),
+          fetchPlayers()
         ])
         
-        // Log the first mission and prize in detail
-        if (missionsData.length > 0) {
-          console.log('First mission:', JSON.stringify(missionsData[0], null, 2));
-        }
-        if (prizesData.length > 0) {
-          console.log('First prize:', JSON.stringify(prizesData[0], null, 2));
-          console.log('Prize fields:', Object.keys(prizesData[0]));
-        }
+        console.log('Received players data:', playersData)
         
-        // Check if the data is in the expected format
-        if (!Array.isArray(missionsData)) {
-          throw new Error('Missions data is not in the expected format')
-        }
-        if (!Array.isArray(prizesData)) {
-          throw new Error('Prizes data is not in the expected format')
-        }
-        
-        setMissions(missionsData)
-        setPrizes(prizesData)
+        setMissions(missionsData || [])
+        setPrizes(prizesData || [])
+        setLeaderboard(leaderboardData || [])
+        setPlayers(Array.isArray(playersData) ? playersData : [])
       } catch (err) {
         console.error('Error in loadData:', err)
         setError(err.message || 'Failed to load data. Please try again later.')
@@ -89,6 +82,18 @@ function App() {
         >
           Prizes
         </button>
+        <button 
+          className={activeSection === 'leaderboard' ? 'active' : ''}
+          onClick={() => setActiveSection('leaderboard')}
+        >
+          Leaderboard
+        </button>
+        <button 
+          className={activeSection === 'players' ? 'active' : ''}
+          onClick={() => setActiveSection('players')}
+        >
+          Players
+        </button>
       </nav>
 
       <main className="content">
@@ -125,8 +130,8 @@ function App() {
               <p className="no-data">No missions available</p>
             ) : (
               <div className="grid">
-                {missions.map(mission => (
-                  <div key={mission.id} className="card">
+                {missions.map((mission, index) => (
+                  <div key={`mission-${index}`} className="card">
                     {mission.imgUrl && (
                       <img 
                         src={mission.imgUrl} 
@@ -137,12 +142,15 @@ function App() {
                         }}
                       />
                     )}
-                    <h3>{mission.name}</h3>
-                    <p>{mission.description}</p>
-                    <div className="mission-details">
-                      <p>Points: {mission.reward?.points || 0}</p>
-                      <p>Credits: {mission.reward?.credits || 0}</p>
-                      <p>Available until: {new Date(mission.active?.to).toLocaleDateString()}</p>
+                    <div className="card-content">
+                      <h3>{mission.name || 'Unnamed Mission'}</h3>
+                      <p>{mission.description || 'No description available'}</p>
+                      <div className="mission-details">
+                        <span className="points">Points: {mission.reward?.points || 0}</span>
+                        <span className="credits">Credits: {mission.reward?.credits || 0}</span>
+                        <p>Available until: {mission.active?.to ? new Date(mission.active.to).toLocaleDateString() : 'No expiry'}</p>
+                      </div>
+                      <button className="go-button">GO!</button>
                     </div>
                   </div>
                 ))}
@@ -158,8 +166,8 @@ function App() {
               <p className="no-data">No prizes available</p>
             ) : (
               <div className="grid">
-                {prizes.map(prize => (
-                  <div key={prize.id} className="card">
+                {prizes.map((prize, index) => (
+                  <div key={`prize-${index}`} className="card">
                     {prize.imgUrl && (
                       <img 
                         src={prize.imgUrl} 
@@ -170,12 +178,106 @@ function App() {
                         }}
                       />
                     )}
-                    <h3>{prize.name}</h3>
-                    <p>{prize.description}</p>
-                    <div className="prize-details">
-                      <p>Credits: {prize.points_required || 0}</p>
-                      <p>Stock: {prize.stock?.available || 'Unlimited'}</p>
-                      <p>Available until: {prize.active?.to ? new Date(prize.active.to).toLocaleDateString() : 'No expiry'}</p>
+                    <div className="card-content">
+                      <h3>{prize.name || 'Unnamed Prize'}</h3>
+                      <p>{prize.description || 'No description available'}</p>
+                      <div className="prize-details">
+                        <span className="credits">Credits: {prize.points_required || 0}</span>
+                        <span className="stock">Stock: {prize.stock?.available || 'Unlimited'}</span>
+                        <p>Available until: {prize.active?.to ? new Date(prize.active.to).toLocaleDateString() : 'No expiry'}</p>
+                      </div>
+                      <button className="collect-button">Collect!</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+        
+        {activeSection === 'leaderboard' && (
+          <section className="leaderboard-section">
+            <h2>Leaderboard</h2>
+            {loading ? (
+              <div className="loading">Loading leaderboard...</div>
+            ) : error ? (
+              <div className="error">{error}</div>
+            ) : players.length === 0 ? (
+              <p className="no-data">No leaderboard data available</p>
+            ) : (
+              <div className="leaderboard">
+                <div className="leaderboard-header">
+                  <span className="rank">Rank</span>
+                  <span className="player">Player</span>
+                  <span className="score">Points</span>
+                </div>
+                {[...players]
+                  .sort((a, b) => (b.points || 0) - (a.points || 0))
+                  .map((player, index) => (
+                    <div key={`leaderboard-${index}`} className="leaderboard-row">
+                      <span className="rank">{index + 1}</span>
+                      <div className="player-info">
+                        <img 
+                          src={player.imgUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`} 
+                          alt={player.name || 'Player avatar'} 
+                          className="player-avatar"
+                          onError={(e) => {
+                            e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`;
+                          }}
+                        />
+                        <span className="player-name">{String(player.name || `Player ${index + 1}`)}</span>
+                      </div>
+                      <span className="score">{Number(player.points || 0)}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </section>
+        )}
+        
+        {activeSection === 'players' && (
+          <section className="players-section">
+            <h2>Players</h2>
+            {loading ? (
+              <div className="loading">Loading players...</div>
+            ) : error ? (
+              <div className="error">{error}</div>
+            ) : players.length === 0 ? (
+              <div className="no-data">No players available</div>
+            ) : (
+              <div className="players-grid">
+                {players.map((player, index) => (
+                  <div key={`player-${index}`} className="player-card">
+                    <div className="player-card-header">
+                      <img 
+                        src={player.imgUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`} 
+                        alt={player.name || 'Player avatar'} 
+                        className="player-card-avatar"
+                        onError={(e) => {
+                          e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`;
+                        }}
+                      />
+                      <h3>{String(player.name || `Player ${index + 1}`)}</h3>
+                    </div>
+                    <div className="player-card-details">
+                      <div className="detail-item">
+                        <span className="label">Points:</span>
+                        <span className="value">{Number(player.points || 0)}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="label">Credits:</span>
+                        <span className="value">{Number(player.credits || 0)}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="label">Level:</span>
+                        <span className="value">{Number(player.level || 1)}</span>
+                      </div>
+                      {player.team && (
+                        <div className="detail-item">
+                          <span className="label">Team:</span>
+                          <span className="value">{String(player.team)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
