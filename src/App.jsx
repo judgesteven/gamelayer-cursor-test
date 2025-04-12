@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { fetchMissions, fetchPrizes, fetchPlayers, fetchTeam, createPlayer } from './services/api'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { AuthForm } from './components/AuthForm'
+import { fetchMissions, fetchPrizes, fetchPlayers, fetchTeam } from './services/api'
 
-function AppContent() {
+function App() {
   const [activeSection, setActiveSection] = useState('profile')
   const [missions, setMissions] = useState([])
   const [prizes, setPrizes] = useState([])
@@ -12,7 +10,6 @@ function AppContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [teams, setTeams] = useState({})
-  const { user, logout } = useAuth()
 
   useEffect(() => {
     const loadData = async () => {
@@ -71,10 +68,6 @@ function AppContent() {
     return team.id || 'Unknown Team';
   };
 
-  if (!user) {
-    return <AuthForm />;
-  }
-
   if (loading) {
     return <div className="loading">Loading...</div>
   }
@@ -87,7 +80,6 @@ function AppContent() {
     <div className="app">
       <header className="header">
         <h1>GameLayer Test</h1>
-        <button onClick={logout} className="logout-button">Logout</button>
       </header>
       
       <nav className="navigation">
@@ -126,55 +118,68 @@ function AppContent() {
       <main className="content">
         {activeSection === 'profile' && (
           <div className="section">
-            <div className="profile-card">
-              <div className="profile-header">
-                <div className="profile-avatar">
-                  <img 
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random`}
-                    alt={user.username}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = 'https://via.placeholder.com/150';
-                    }}
-                  />
-                </div>
-                <div className="profile-title">
-                  <h2>{user.username}</h2>
-                  <div className="profile-email">{user.email}</div>
-                </div>
-              </div>
-              <div className="profile-stats">
-                <div className="stat-card">
-                  <div className="stat-icon">🏆</div>
-                  <div className="stat-content">
-                    <span className="stat-value">{user.points || 0}</span>
-                    <span className="stat-label">Points</span>
+            {loading ? (
+              <div className="loading">Loading profile...</div>
+            ) : error ? (
+              <div className="error">{error}</div>
+            ) : players.length > 0 ? (
+              <div className="profile-card">
+                <div className="profile-header">
+                  <div className="profile-avatar">
+                    <img 
+                      src={String(players[0].imgUrl) || 'https://via.placeholder.com/150'} 
+                      alt={String(players[0].name) || 'Player'} 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/150';
+                      }}
+                    />
+                  </div>
+                  <div className="profile-title">
+                    <h2>{String(players[0].name) || 'Player Name'}</h2>
+                    {players[0].team && (
+                      <div className="profile-team">
+                        <span className="team-label">Team</span>
+                        <span className="team-name">{getTeamName(players[0].team)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="stat-card">
-                  <div className="stat-icon">💰</div>
-                  <div className="stat-content">
-                    <span className="stat-value">{user.credits || 0}</span>
-                    <span className="stat-label">Credits</span>
+                <div className="profile-stats">
+                  <div className="stat-card">
+                    <div className="stat-icon">🏆</div>
+                    <div className="stat-content">
+                      <span className="stat-value">{Number(players[0].points) || 0}</span>
+                      <span className="stat-label">Points</span>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon">💰</div>
+                    <div className="stat-content">
+                      <span className="stat-value">{Number(players[0].credits) || 0}</span>
+                      <span className="stat-label">Credits</span>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon">⭐</div>
+                    <div className="stat-content">
+                      <span className="stat-value">{Number(players[0].level) || 1}</span>
+                      <span className="stat-label">Level</span>
+                    </div>
                   </div>
                 </div>
-                <div className="stat-card">
-                  <div className="stat-icon">⭐</div>
-                  <div className="stat-content">
-                    <span className="stat-value">{user.level || 1}</span>
-                    <span className="stat-label">Level</span>
-                  </div>
+                <div className="profile-actions">
+                  <button className="action-button" onClick={() => setActiveSection('missions')}>
+                    View Missions ({Number(missions.length) || 0})
+                  </button>
+                  <button className="action-button" onClick={() => setActiveSection('prizes')}>
+                    View Prizes ({Number(prizes.length) || 0})
+                  </button>
                 </div>
               </div>
-              <div className="profile-actions">
-                <button className="action-button" onClick={() => setActiveSection('missions')}>
-                  View Missions ({missions.length})
-                </button>
-                <button className="action-button" onClick={() => setActiveSection('prizes')}>
-                  View Prizes ({prizes.length})
-                </button>
-              </div>
-            </div>
+            ) : (
+              <div className="no-data">No player data available</div>
+            )}
           </div>
         )}
         
@@ -342,14 +347,6 @@ function AppContent() {
         )}
       </main>
     </div>
-  )
-}
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
   )
 }
 
