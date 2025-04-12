@@ -656,6 +656,19 @@ body {
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+.leaderboard-header div:first-child {
+  text-align: center;
+}
+
+.leaderboard-header div:nth-child(2) {
+  text-align: center;
+  padding-left: 0.75rem;
+}
+
+.leaderboard-header div:nth-child(3) {
+  text-align: center;
+}
+
 .leaderboard-row {
   display: grid;
   grid-template-columns: 60px 1fr 100px;
@@ -689,6 +702,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  justify-content: center;
 }
 
 .score {
