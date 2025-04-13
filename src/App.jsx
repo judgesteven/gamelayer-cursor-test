@@ -1,22 +1,42 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { fetchMissions, fetchPrizes, fetchPlayers, fetchTeam, fetchTeams, fetchPlayer } from './services/api'
+import { fetchMissions, fetchPrizes, fetchPlayers, fetchTeam, fetchTeams, fetchPlayer, completeMissionEvent, createPlayer } from './services/api'
 
 function App() {
   const [activeSection, setActiveSection] = useState('profile')
-  const [missions, setMissions] = useState([])
-  const [prizes, setPrizes] = useState([])
+  const [missions, setMissions] = useState(() => {
+    const savedMissions = localStorage.getItem('missions');
+    return savedMissions ? JSON.parse(savedMissions) : [];
+  })
+  const [prizes, setPrizes] = useState(() => {
+    const savedPrizes = localStorage.getItem('prizes');
+    return savedPrizes ? JSON.parse(savedPrizes) : [];
+  })
   const [players, setPlayers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [teams, setTeams] = useState({})
+  const [showToast, setShowToast] = useState(false)
   const [activePlayer, setActivePlayer] = useState(() => {
+    // Try to load the active player from localStorage
+    const savedPlayer = localStorage.getItem('activePlayer');
+    if (savedPlayer) {
+      const playerData = JSON.parse(savedPlayer);
+      // Ensure the player ID is set in the player data
+      if (playerData && !playerData.id && playerData.name === 'Mike Joyce') {
+        playerData.id = '1-test-player';
+      }
+      return playerData;
+    }
+    return null;
+  })
+  const [showSignInModal, setShowSignInModal] = useState(false)
+  const [playerIdInput, setPlayerIdInput] = useState('')
+  const [selectedPlayer, setSelectedPlayer] = useState(() => {
     // Try to load the active player from localStorage
     const savedPlayer = localStorage.getItem('activePlayer');
     return savedPlayer ? JSON.parse(savedPlayer) : null;
   })
-  const [showSignInModal, setShowSignInModal] = useState(false)
-  const [playerIdInput, setPlayerIdInput] = useState('')
 
   useEffect(() => {
     const loadData = async () => {
@@ -45,34 +65,21 @@ function App() {
             try {
               const latestPlayerData = await fetchPlayer(playerData.id);
               setActivePlayer(latestPlayerData);
+              localStorage.setItem('activePlayer', JSON.stringify(latestPlayerData));
               
-              // Fetch missions and prizes for the active player
-              const missionsData = await fetchMissions(latestPlayerData.id);
+              // Fetch missions and prizes for the active player using their ID
+              const missionsData = await fetchMissions(playerData.id);
               setMissions(missionsData || []);
+              localStorage.setItem('missions', JSON.stringify(missionsData || []));
 
-              const prizesData = await fetchPrizes(latestPlayerData.id);
+              const prizesData = await fetchPrizes(playerData.id);
               setPrizes(prizesData || []);
+              localStorage.setItem('prizes', JSON.stringify(prizesData || []));
             } catch (err) {
               console.warn('Failed to fetch latest player data:', err);
               // If fetching latest data fails, use the saved data
               setActivePlayer(playerData);
             }
-          } else {
-            // If saved player data is invalid, use Johnny Marr as default
-            const defaultPlayer = playersData.find(player => player.name === 'Johnny Marr');
-            if (defaultPlayer) {
-              setActivePlayer(defaultPlayer);
-            } else {
-              setActivePlayer(playersData[0]);
-            }
-          }
-        } else {
-          // If no saved player, use Johnny Marr as default
-          const defaultPlayer = playersData.find(player => player.name === 'Johnny Marr');
-          if (defaultPlayer) {
-            setActivePlayer(defaultPlayer);
-          } else {
-            setActivePlayer(playersData[0]);
           }
         }
         
@@ -95,9 +102,10 @@ function App() {
     return team.id || 'Unknown Team';
   };
 
-  const handleSignIn = async () => {
+  const handleSignIn = async (e) => {
+    e.preventDefault();
     if (!playerIdInput.trim()) {
-      setError('Please enter a valid Player ID');
+      setError('Please enter a player ID');
       return;
     }
 
@@ -105,6 +113,18 @@ function App() {
       setLoading(true);
       setError(null);
       
+      // Try to create the player first
+      try {
+        await createPlayer(playerIdInput);
+        console.log('Player created successfully');
+      } catch (error) {
+        // If the player already exists, we can ignore the error
+        if (!error.message.includes('exists')) {
+          throw error;
+        }
+        console.log('Player already exists');
+      }
+
       // Fetch the player data from GameLayer
       const playerData = await fetchPlayer(playerIdInput);
       if (!playerData) {
@@ -112,17 +132,24 @@ function App() {
         return;
       }
 
+      // Ensure the player ID is set in the player data
+      const playerWithId = { ...playerData, id: playerIdInput };
+      console.log('Player data with ID:', playerWithId);
+
       // Fetch missions for the new player
       const missionsData = await fetchMissions(playerIdInput);
       setMissions(missionsData || []);
+      localStorage.setItem('missions', JSON.stringify(missionsData || []));
 
       // Fetch prizes for the new player
       const prizesData = await fetchPrizes(playerIdInput);
       setPrizes(prizesData || []);
+      localStorage.setItem('prizes', JSON.stringify(prizesData || []));
 
       // Update the active player and save to localStorage
-      setActivePlayer(playerData);
-      localStorage.setItem('activePlayer', JSON.stringify(playerData));
+      setActivePlayer(playerWithId);
+      setSelectedPlayer(playerWithId);
+      localStorage.setItem('activePlayer', JSON.stringify(playerWithId));
       
       setShowSignInModal(false);
       setPlayerIdInput('');
@@ -131,6 +158,36 @@ function App() {
       setError(err.message || 'Failed to switch player. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMissionClick = async (mission) => {
+    try {
+      if (!activePlayer) {
+        console.log('No player selected');
+        return;
+      }
+
+      console.log('Current player:', activePlayer);
+      console.log('Selected mission:', mission);
+
+      // Get the event ID from the mission's objectives
+      const eventId = mission.objectives?.events?.[0]?.id || mission.objectives?.events?.[0] || '1-test-event';
+      console.log('Using event ID:', eventId);
+
+      // Complete the mission
+      await completeMissionEvent(activePlayer.id, eventId);
+      console.log('Mission completed successfully');
+
+      // Refresh the data
+      const updatedMissions = await fetchMissions(activePlayer.id);
+      const updatedPlayer = await fetchPlayer(activePlayer.id);
+      setMissions(updatedMissions);
+      setActivePlayer(updatedPlayer);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      console.error('Error completing mission:', error);
     }
   };
 
@@ -144,6 +201,11 @@ function App() {
 
   return (
     <div className="app">
+      {showToast && (
+        <div className="toast">
+          Success!
+        </div>
+      )}
       <header>
         <div className="header-content">
           <a href="/" className="logo">
@@ -172,24 +234,27 @@ function App() {
               Prizes
             </button>
             <button
-              className={`nav-button ${activeSection === 'players' ? 'active' : ''}`}
-              onClick={() => setActiveSection('players')}
-            >
-              <i className="fas fa-users"></i>
-              Players
-            </button>
-            <button
               className={`nav-button ${activeSection === 'leaderboard' ? 'active' : ''}`}
               onClick={() => setActiveSection('leaderboard')}
             >
               <i className="fas fa-trophy"></i>
               Leaderboard
             </button>
+            <button
+              className={`nav-button ${activeSection === 'players' ? 'active' : ''}`}
+              onClick={() => setActiveSection('players')}
+            >
+              <i className="fas fa-users"></i>
+              Players
+            </button>
           </nav>
           <div className="auth-section">
             <button 
               className="sign-in-button"
-              onClick={() => setShowSignInModal(true)}
+              onClick={() => {
+                setShowSignInModal(true);
+                setActiveSection('profile');
+              }}
             >
               {activePlayer ? 'Switch Player' : 'Sign In'}
             </button>
@@ -340,12 +405,28 @@ function App() {
                         </div>
                         <div className="mission-details">
                           <div>
-                            <span className="points">{mission.reward?.points || 0}</span>
-                            <span className="credits">{mission.reward?.credits || 0}</span>
+                            <span className="points">{Number(mission.reward?.points) || 0}</span>
+                            <span className="credits">{Number(mission.reward?.credits) || 0}</span>
                           </div>
-                          <p style={{ textAlign: 'left' }}>Available until: {mission.active?.to ? new Date(mission.active.to).toLocaleDateString() : 'No expiry'}</p>
+                          <p style={{ textAlign: 'left' }}>
+                            Available until: {mission.active?.to ? new Date(mission.active.to).toLocaleDateString() : 'No expiry'}
+                          </p>
                         </div>
-                        <button className="go-button">GO!</button>
+                        <button 
+                          className={`go-button ${mission.completed || 
+                            (mission.active?.to && new Date(mission.active.to) < new Date()) ? 'disabled' : ''}`}
+                          onClick={() => {
+                            if (!mission.completed && 
+                                (!mission.active?.to || new Date(mission.active.to) >= new Date()) &&
+                                mission.id !== '1-test-mission') {
+                              handleMissionClick(mission);
+                            }
+                          }}
+                          disabled={mission.completed || 
+                            (mission.active?.to && new Date(mission.active.to) < new Date())}
+                        >
+                          GO!
+                        </button>
                       </div>
                     </div>
                   );
@@ -402,7 +483,20 @@ function App() {
                         <span className="credits">{Number(prize.credits)}</span>
                       )}
                       <p>Available until: {prize.active?.to ? new Date(prize.active.to).toLocaleDateString() : 'No expiry'}</p>
-                      <button className="collect-button">Collect!</button>
+                      <button 
+                        className={`collect-button ${prize.stock?.available <= 0 || 
+                          (prize.active?.to && new Date(prize.active.to) < new Date()) ? 'disabled' : ''}`}
+                        onClick={() => {
+                          if (prize.stock?.available > 0 && 
+                              (!prize.active?.to || new Date(prize.active.to) >= new Date())) {
+                            handlePrizeClick(prize);
+                          }
+                        }}
+                        disabled={prize.stock?.available <= 0 || 
+                          (prize.active?.to && new Date(prize.active.to) < new Date())}
+                      >
+                        Collect!
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -508,7 +602,7 @@ function App() {
           </section>
         )}
       </main>
-    </div>
+      </div>
   )
 }
 

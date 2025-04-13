@@ -47,7 +47,9 @@ export const fetchMissions = async (playerId) => {
       throw new Error('Failed to fetch missions');
     }
 
-    return await response.json();
+    const missionsData = await response.json();
+    console.log('Missions data from API:', missionsData);
+    return missionsData;
   } catch (error) {
     console.error('Error fetching missions:', error);
     throw error;
@@ -160,10 +162,82 @@ export const fetchPlayer = async (playerId) => {
       throw new Error('Failed to fetch player');
     }
 
-    const data = await response.json();
-    return data;
+    const playerData = await response.json();
+    // Add the player ID to the returned data
+    return { ...playerData, id: playerId };
   } catch (error) {
     console.error('Error fetching player:', error);
+    throw error;
+  }
+};
+
+export const completeMissionEvent = async (playerId, eventId) => {
+  try {
+    const url = `${API_BASE_URL}/events/${eventId}/complete?player=${playerId}&account=${ACCOUNT_ID}`;
+    console.log('Making API call to:', url);
+    console.log('Request headers:', baseHeaders);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: baseHeaders,
+      body: JSON.stringify({
+        player: playerId,
+        completed_at: new Date().toISOString(),
+        status: 'completed'
+      })
+    });
+
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    
+    const responseText = await response.text();
+    console.log('Response body:', responseText);
+
+    if (!response.ok) {
+      console.error('Complete Mission Event Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: responseText
+      });
+      throw new Error(`Failed to complete mission event: ${response.status} ${response.statusText}`);
+    }
+
+    return JSON.parse(responseText);
+  } catch (error) {
+    console.error('Error completing mission event:', {
+      error: error.message,
+      stack: error.stack,
+      url: `${API_BASE_URL}/events/${eventId}/complete?player=${playerId}&account=${ACCOUNT_ID}`
+    });
+    throw error;
+  }
+};
+
+export const createPlayer = async (playerId) => {
+  try {
+    const url = `${API_BASE_URL}/players?account=${ACCOUNT_ID}`;
+    console.log('Creating player:', playerId);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: baseHeaders,
+      body: JSON.stringify({
+        player: playerId,
+        name: playerId,
+        account: ACCOUNT_ID
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Create Player Error:', errorText);
+      throw new Error('Failed to create player');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error creating player:', error);
     throw error;
   }
 }; 
