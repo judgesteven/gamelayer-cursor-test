@@ -33,24 +33,47 @@ function App() {
         });
         setTeams(teamsMap);
         
-        const [playersData] = await Promise.all([
-          fetchPlayers()
-        ])
-        
+        // Fetch all players
+        const playersData = await fetchPlayers();
         console.log('Players data structure:', JSON.stringify(playersData, null, 2))
         
-        // If we have a saved active player, use that instead of Johnny Marr
+        // If we have a saved active player, fetch their latest data from the API
         const savedPlayer = localStorage.getItem('activePlayer');
-        const initialPlayer = savedPlayer ? JSON.parse(savedPlayer) : playersData.find(player => player.name === 'Johnny Marr');
-        setActivePlayer(initialPlayer || playersData[0]);
+        if (savedPlayer) {
+          const playerData = JSON.parse(savedPlayer);
+          if (playerData && playerData.id) {
+            try {
+              const latestPlayerData = await fetchPlayer(playerData.id);
+              setActivePlayer(latestPlayerData);
+              
+              // Fetch missions and prizes for the active player
+              const missionsData = await fetchMissions(latestPlayerData.id);
+              setMissions(missionsData || []);
 
-        // Fetch missions and prizes for the active player
-        if (initialPlayer) {
-          const missionsData = await fetchMissions(initialPlayer.id);
-          setMissions(missionsData || []);
-
-          const prizesData = await fetchPrizes(initialPlayer.id);
-          setPrizes(prizesData || []);
+              const prizesData = await fetchPrizes(latestPlayerData.id);
+              setPrizes(prizesData || []);
+            } catch (err) {
+              console.warn('Failed to fetch latest player data:', err);
+              // If fetching latest data fails, use the saved data
+              setActivePlayer(playerData);
+            }
+          } else {
+            // If saved player data is invalid, use Johnny Marr as default
+            const defaultPlayer = playersData.find(player => player.name === 'Johnny Marr');
+            if (defaultPlayer) {
+              setActivePlayer(defaultPlayer);
+            } else {
+              setActivePlayer(playersData[0]);
+            }
+          }
+        } else {
+          // If no saved player, use Johnny Marr as default
+          const defaultPlayer = playersData.find(player => player.name === 'Johnny Marr');
+          if (defaultPlayer) {
+            setActivePlayer(defaultPlayer);
+          } else {
+            setActivePlayer(playersData[0]);
+          }
         }
         
         setPlayers(Array.isArray(playersData) ? playersData : [])
@@ -275,34 +298,58 @@ function App() {
         {activeSection === 'missions' && (
           <section className="missions-section">
             <h2>Missions</h2>
-            {missions.length === 0 ? (
-              <p className="no-data">No missions available</p>
+            {loading ? (
+              <div className="loading">Loading missions...</div>
+            ) : error ? (
+              <div className="error">{error}</div>
+            ) : missions.length === 0 ? (
+              <div className="no-data">No missions available</div>
             ) : (
-              <div className="grid">
-                {missions.map((mission, index) => (
-                  <div key={`mission-${index}`} className="card">
-                    {mission.imgUrl && (
-                      <img 
-                        src={String(mission.imgUrl)} 
-                        alt={String(mission.name || 'Mission image')} 
-                        className="card-image"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    )}
-                    <div className="card-content">
-                      <h3>{String(mission.name || 'Unnamed Mission')}</h3>
-                      <p>{String(mission.description || 'No description available')}</p>
-                      <div className="mission-details">
-                        <span className="points">{Number(mission.reward?.points || 0)}</span>
-                        <span className="credits">{Number(mission.reward?.credits || 0)}</span>
-                        <p>Available until: {mission.active?.to ? new Date(mission.active.to).toLocaleDateString() : 'No expiry'}</p>
+              <div className="missions-grid">
+                {missions.map((mission, index) => {
+                  const totalSteps = mission.steps?.length || 0;
+                  const completedSteps = mission.steps?.filter(step => step.completed)?.length || 0;
+                  const progress = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
+                  
+                  console.log('Mission data:', mission); // Debug log
+                  
+                  return (
+                    <div key={`mission-${index}`} className="card mission-card">
+                      <div className="card-image">
+                        <img 
+                          src={mission.imgUrl || `https://api.dicebear.com/7.x/shapes/svg?seed=${index}`} 
+                          alt={mission.title || 'Mission image'} 
+                          onError={(e) => {
+                            e.target.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${index}`;
+                          }}
+                        />
                       </div>
-                      <button className="go-button">GO!</button>
+                      <div className="card-content">
+                        <h3>{String(mission.title || `Mission ${index + 1}`)}</h3>
+                        <p>{String(mission.description || 'No description available')}</p>
+                        <div className="mission-progress">
+                          <div className="progress-bar">
+                            <div 
+                              className="progress-fill" 
+                              style={{ width: `${progress}%` }}
+                            ></div>
+                          </div>
+                          <div className="progress-text">
+                            {completedSteps} of {totalSteps} steps completed
+                          </div>
+                        </div>
+                        <div className="mission-details">
+                          <div>
+                            <span className="points">{mission.reward?.points || 0}</span>
+                            <span className="credits">{mission.reward?.credits || 0}</span>
+                          </div>
+                          <p style={{ textAlign: 'left' }}>Available until: {mission.active?.to ? new Date(mission.active.to).toLocaleDateString() : 'No expiry'}</p>
+                        </div>
+                        <button className="go-button">GO!</button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -314,7 +361,7 @@ function App() {
             {prizes.length === 0 ? (
               <p className="no-data">No prizes available</p>
             ) : (
-              <div className="grid">
+              <div className="prizes-grid">
                 {prizes
                   .filter(prize => {
                     // Only show prizes that the player can afford
@@ -323,7 +370,7 @@ function App() {
                     return playerCredits >= prizeCost;
                   })
                   .map((prize, index) => (
-                  <div key={`prize-${index}`} className="card">
+                  <div key={`prize-${index}`} className="card prize-card">
                     {prize.imgUrl && (
                       <img 
                         src={String(prize.imgUrl)} 
@@ -337,13 +384,24 @@ function App() {
                     <div className="card-content">
                       <h3>{String(prize.name || 'Unnamed Prize')}</h3>
                       <p>{String(prize.description || 'No description available')}</p>
-                      <div className="prize-details">
-                        {prize.credits > 0 && (
-                          <span className="credits">{Number(prize.credits)}</span>
-                        )}
-                        <span className="stock">Stock: {String(prize.stock?.available || 'Unlimited')}</span>
-                        <p>Available until: {prize.active?.to ? new Date(prize.active.to).toLocaleDateString() : 'No expiry'}</p>
+                      <div className="stock-progress">
+                        <div className="progress-bar">
+                          <div 
+                            className="progress-fill" 
+                            style={{ 
+                              width: `${((10000 - prize.stock?.available) / 10000) * 100 || 0}%`,
+                              backgroundColor: prize.stock?.available > 0 ? '#4CAF50' : '#dc2626'
+                            }}
+                          ></div>
+                        </div>
+                        <div className="progress-text">
+                          {isNaN(prize.stock?.available) ? 0 : prize.stock?.available} available
+                        </div>
                       </div>
+                      {prize.credits > 0 && (
+                        <span className="credits">{Number(prize.credits)}</span>
+                      )}
+                      <p>Available until: {prize.active?.to ? new Date(prize.active.to).toLocaleDateString() : 'No expiry'}</p>
                       <button className="collect-button">Collect!</button>
                     </div>
                   </div>

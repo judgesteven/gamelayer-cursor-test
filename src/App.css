@@ -239,11 +239,17 @@ nav {
   animation: bounce 1s infinite;
 }
 
-.grid {
+.missions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-  padding: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.mission-card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .card {
@@ -334,33 +340,71 @@ nav {
   flex-grow: 1;
 }
 
-.mission-details, .prize-details {
+.mission-details {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: 15px 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
 }
 
-.mission-details > div, .prize-details > div {
+.mission-details > div {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
-  width: 100%;
-  gap: 10px;
+  gap: 0.5rem;
 }
 
-.mission-details span, .prize-details span {
-  padding: 8px 12px;
-  border-radius: 15px;
-  font-size: 0.9rem;
+.mission-details .points {
+  background: #FF6B6B;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 0.85rem;
   font-weight: 600;
-  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.mission-details p, .prize-details p {
+.mission-details .credits {
+  background: #2196F3;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mission-details p {
   margin: 0;
   color: #666;
   font-size: 0.9rem;
+  text-align: left;
+}
+
+.prize-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.prize-details > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.prize-details p {
+  margin: 0;
+  color: #666;
+  font-size: 0.8rem;
   text-align: left;
 }
 
@@ -387,35 +431,24 @@ nav {
 .credits {
   background: #2196F3;
   color: white;
-  padding: 6px 12px;
-  border-radius: 100px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  animation: pulse 2s infinite;
-  transform: translateZ(0);
-  transition: transform 0.3s ease;
-}
-
-.credits::before {
-  display: none !important;
 }
 
 .credits::after {
   content: ' Credits';
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
 .stock {
   background: #4CAF50;
   color: white;
-  padding: 8px 16px;
+  padding: 4px 12px;
   border-radius: 100px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -423,6 +456,7 @@ nav {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transform: translateZ(0);
   transition: transform 0.3s ease;
+  margin-left: auto;
 }
 
 .stock:hover {
@@ -449,7 +483,7 @@ nav {
 }
 
 .collect-button {
-  background: linear-gradient(135deg, #2196F3, #1976D2);
+  background: linear-gradient(135deg, #4CAF50, #45a049);
   color: white;
 }
 
@@ -1285,10 +1319,49 @@ nav {
 
 .mission-details {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: 15px 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.mission-details > div {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.mission-details .points {
+  background: #FF6B6B;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mission-details .credits {
+  background: #2196F3;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mission-details p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  text-align: left;
 }
 
 .points:hover {
@@ -1465,9 +1538,23 @@ nav {
 
 .prize-details {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 15px 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.prize-details > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.prize-details p {
+  margin: 0;
+  color: #666;
+  font-size: 0.8rem;
+  text-align: left;
 }
 
 .collect-button {
@@ -1482,17 +1569,18 @@ nav {
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  background: linear-gradient(135deg, #2196F3, #1976D2);
+  background: linear-gradient(135deg, #4CAF50, #45a049);
   color: white;
+  margin-top: 16px;
 }
 
 .collect-button:hover {
-  transform: translateY(-2px) scale(1.02);
+  transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .collect-button:active {
-  transform: translateY(1px) scale(0.98);
+  transform: translateY(0);
 }
 
 .collect-button::after {
@@ -1607,4 +1695,69 @@ nav {
   color: #e53e3e;
   font-size: 0.875rem;
   margin: 0;
+}
+
+.mission-progress {
+  margin: 1rem 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.875rem;
+  color: #64748b;
+  text-align: right;
+}
+
+.prizes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.prize-card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.stock-progress {
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.stock-progress .progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.stock-progress .progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.stock-progress .progress-text {
+  font-size: 0.875rem;
+  color: #64748b;
+  text-align: right;
 }
