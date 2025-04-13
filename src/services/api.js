@@ -34,9 +34,9 @@ export const authenticate = async () => {
   }
 };
 
-export const fetchMissions = async () => {
+export const fetchMissions = async (playerId) => {
   try {
-    const url = `${API_BASE_URL}/missions?account=${ACCOUNT_ID}`;
+    const url = `${API_BASE_URL}/missions?account=${ACCOUNT_ID}${playerId ? `&player=${playerId}` : ''}`;
     const response = await fetch(url, {
       headers: baseHeaders
     });
@@ -54,9 +54,9 @@ export const fetchMissions = async () => {
   }
 };
 
-export const fetchPrizes = async () => {
+export const fetchPrizes = async (playerId) => {
   try {
-    const url = `${API_BASE_URL}/prizes?account=${ACCOUNT_ID}`;
+    const url = `${API_BASE_URL}/prizes?account=${ACCOUNT_ID}${playerId ? `&player=${playerId}` : ''}`;
     const response = await fetch(url, {
       headers: baseHeaders
     });
@@ -122,6 +122,27 @@ export const fetchTeam = async (teamId) => {
     return data;
   } catch (error) {
     console.error('Error fetching team:', error);
+    throw error;
+  }
+};
+
+export const fetchTeams = async () => {
+  try {
+    const url = `${API_BASE_URL}/teams?account=${ACCOUNT_ID}`;
+    const response = await fetch(url, {
+      headers: baseHeaders
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Teams Error:', errorText);
+      throw new Error('Failed to fetch teams');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching teams:', error);
     throw error;
   }
 }; 

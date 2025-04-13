@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { fetchMissions, fetchPrizes, fetchPlayers, fetchTeam } from './services/api'
+import { fetchMissions, fetchPrizes, fetchPlayers, fetchTeam, fetchTeams } from './services/api'
 
 function App() {
   const [activeSection, setActiveSection] = useState('profile')
@@ -10,6 +10,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [teams, setTeams] = useState({})
+  const [activePlayer, setActivePlayer] = useState(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -18,38 +19,32 @@ function App() {
         setError(null)
         console.log('Starting to load data...')
         
-        const [missionsData, prizesData, playersData] = await Promise.all([
-          fetchMissions(),
-          fetchPrizes(),
+        // Fetch teams first
+        const teamsData = await fetchTeams();
+        const teamsMap = {};
+        teamsData.forEach(team => {
+          teamsMap[team.id] = team;
+        });
+        setTeams(teamsMap);
+        
+        const [playersData] = await Promise.all([
           fetchPlayers()
         ])
         
         console.log('Players data structure:', JSON.stringify(playersData, null, 2))
         
+        // Find Johnny Marr and set as active player
+        const johnnyMarr = playersData.find(player => player.name === 'Johnny Marr')
+        setActivePlayer(johnnyMarr || playersData[0])
+
+        // Fetch missions for the active player
+        const missionsData = await fetchMissions(johnnyMarr?.id || playersData[0]?.id)
         setMissions(missionsData || [])
+
+        // Fetch prizes for the active player
+        const prizesData = await fetchPrizes(johnnyMarr?.id || playersData[0]?.id)
         setPrizes(prizesData || [])
         setPlayers(Array.isArray(playersData) ? playersData : [])
-
-        // Fetch team details for each unique team ID
-        const teamIds = new Set();
-        playersData.forEach(player => {
-          if (player.team && player.team.id) {
-            teamIds.add(player.team.id);
-          }
-        });
-
-        const teamPromises = Array.from(teamIds).map(teamId => 
-          fetchTeam(teamId)
-            .then(teamData => ({ [teamId]: teamData }))
-            .catch(error => {
-              console.error(`Error fetching team ${teamId}:`, error);
-              return { [teamId]: { name: `Team ${teamId}` } };
-            })
-        );
-
-        const teamResults = await Promise.all(teamPromises);
-        const teamsMap = teamResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
-        setTeams(teamsMap);
       } catch (err) {
         console.error('Error in loadData:', err)
         setError(err.message || 'Failed to load data. Please try again later.')
@@ -78,43 +73,57 @@ function App() {
 
   return (
     <div className="app">
-      <header className="header">
-        <h1>GameLayer Test</h1>
+      <header>
+        <div className="header-content">
+          <a href="/" className="logo">
+            <h1>GameLayer</h1>
+          </a>
+          <nav>
+            <button
+              className={`nav-button ${activeSection === 'profile' ? 'active' : ''}`}
+              onClick={() => setActiveSection('profile')}
+            >
+              <i className="fas fa-user"></i>
+              Profile
+            </button>
+            <button
+              className={`nav-button ${activeSection === 'missions' ? 'active' : ''}`}
+              onClick={() => setActiveSection('missions')}
+            >
+              <i className="fas fa-tasks"></i>
+              Missions
+            </button>
+            <button
+              className={`nav-button ${activeSection === 'prizes' ? 'active' : ''}`}
+              onClick={() => setActiveSection('prizes')}
+            >
+              <i className="fas fa-gift"></i>
+              Prizes
+            </button>
+            <button
+              className={`nav-button ${activeSection === 'players' ? 'active' : ''}`}
+              onClick={() => setActiveSection('players')}
+            >
+              <i className="fas fa-users"></i>
+              Players
+            </button>
+            <button
+              className={`nav-button ${activeSection === 'leaderboard' ? 'active' : ''}`}
+              onClick={() => setActiveSection('leaderboard')}
+            >
+              <i className="fas fa-trophy"></i>
+              Leaderboard
+            </button>
+          </nav>
+          <div className="auth-section">
+            <button className="sign-in-button">
+              <i className="fas fa-sign-in-alt"></i>
+              Sign In
+            </button>
+          </div>
+        </div>
       </header>
       
-      <nav className="navigation">
-        <button 
-          className={activeSection === 'profile' ? 'active' : ''}
-          onClick={() => setActiveSection('profile')}
-        >
-          Profile
-        </button>
-        <button 
-          className={activeSection === 'missions' ? 'active' : ''}
-          onClick={() => setActiveSection('missions')}
-        >
-          Missions
-        </button>
-        <button 
-          className={activeSection === 'prizes' ? 'active' : ''}
-          onClick={() => setActiveSection('prizes')}
-        >
-          Prizes
-        </button>
-        <button 
-          className={activeSection === 'leaderboard' ? 'active' : ''}
-          onClick={() => setActiveSection('leaderboard')}
-        >
-          Leaderboard
-        </button>
-        <button 
-          className={activeSection === 'players' ? 'active' : ''}
-          onClick={() => setActiveSection('players')}
-        >
-          Players
-        </button>
-      </nav>
-
       <main className="content">
         {activeSection === 'profile' && (
           <div className="section">
@@ -122,13 +131,13 @@ function App() {
               <div className="loading">Loading profile...</div>
             ) : error ? (
               <div className="error">{error}</div>
-            ) : players.length > 0 ? (
+            ) : activePlayer ? (
               <div className="profile-card">
                 <div className="profile-header">
                   <div className="profile-avatar">
                     <img 
-                      src={String(players[0].imgUrl) || 'https://via.placeholder.com/150'} 
-                      alt={String(players[0].name) || 'Player'} 
+                      src={String(activePlayer.imgUrl) || 'https://via.placeholder.com/150'} 
+                      alt={String(activePlayer.name) || 'Player'} 
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = 'https://via.placeholder.com/150';
@@ -136,44 +145,41 @@ function App() {
                     />
                   </div>
                   <div className="profile-title">
-                    <h2>{String(players[0].name) || 'Player Name'}</h2>
-                    {players[0].team && (
+                    <h2>{String(activePlayer.name) || 'Player Name'}</h2>
+                    {activePlayer.team && (
                       <div className="profile-team">
                         <span className="team-label">Team</span>
-                        <span className="team-name">{getTeamName(players[0].team)}</span>
+                        <span className="team-name">{getTeamName(activePlayer.team)}</span>
                       </div>
                     )}
                   </div>
                 </div>
                 <div className="profile-stats">
                   <div className="stat-card">
-                    <div className="stat-icon">🏆</div>
                     <div className="stat-content">
-                      <span className="stat-value">{Number(players[0].points) || 0}</span>
+                      <span className="stat-value">{Number(activePlayer.points) || 0}</span>
                       <span className="stat-label">Points</span>
                     </div>
                   </div>
                   <div className="stat-card">
-                    <div className="stat-icon">💰</div>
                     <div className="stat-content">
-                      <span className="stat-value">{Number(players[0].credits) || 0}</span>
+                      <span className="stat-value">{Number(activePlayer.credits) || 0}</span>
                       <span className="stat-label">Credits</span>
                     </div>
                   </div>
                   <div className="stat-card">
-                    <div className="stat-icon">⭐</div>
                     <div className="stat-content">
-                      <span className="stat-value">{Number(players[0].level) || 1}</span>
+                      <span className="stat-value">{Number(activePlayer.level) || 1}</span>
                       <span className="stat-label">Level</span>
                     </div>
                   </div>
                 </div>
                 <div className="profile-actions">
                   <button className="action-button" onClick={() => setActiveSection('missions')}>
-                    View Missions ({Number(missions.length) || 0})
+                    Available Missions ({Number(missions.length) || 0})
                   </button>
                   <button className="action-button" onClick={() => setActiveSection('prizes')}>
-                    View Prizes ({Number(prizes.length) || 0})
+                    Available Prizes ({Number(prizes.length) || 0})
                   </button>
                 </div>
               </div>
@@ -226,7 +232,14 @@ function App() {
               <p className="no-data">No prizes available</p>
             ) : (
               <div className="grid">
-                {prizes.map((prize, index) => (
+                {prizes
+                  .filter(prize => {
+                    // Only show prizes that the player can afford
+                    const playerCredits = Number(activePlayer?.credits) || 0;
+                    const prizeCost = Number(prize.credits) || 0;
+                    return playerCredits >= prizeCost;
+                  })
+                  .map((prize, index) => (
                   <div key={`prize-${index}`} className="card">
                     {prize.imgUrl && (
                       <img 
@@ -252,46 +265,6 @@ function App() {
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
-          </section>
-        )}
-        
-        {activeSection === 'leaderboard' && (
-          <section className="leaderboard-section">
-            <h2>Leaderboard</h2>
-            {loading ? (
-              <div className="loading">Loading leaderboard...</div>
-            ) : error ? (
-              <div className="error">{error}</div>
-            ) : players.length === 0 ? (
-              <p className="no-data">No leaderboard data available</p>
-            ) : (
-              <div className="leaderboard">
-                <div className="leaderboard-header">
-                  <span className="rank">Rank</span>
-                  <span className="player">Player</span>
-                  <span className="score">Points</span>
-                </div>
-                {[...players]
-                  .sort((a, b) => (b.points || 0) - (a.points || 0))
-                  .map((player, index) => (
-                    <div key={`leaderboard-${index}`} className="leaderboard-row">
-                      <span className="rank">{index + 1}</span>
-                      <div className="player-info">
-                        <img 
-                          src={player.imgUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`} 
-                          alt={player.name || 'Player avatar'} 
-                          className="player-avatar"
-                          onError={(e) => {
-                            e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`;
-                          }}
-                        />
-                        <span className="player-name">{String(player.name || `Player ${index + 1}`)}</span>
-                      </div>
-                      <span className="score">{Number(player.points || 0)}</span>
-                    </div>
-                  ))}
               </div>
             )}
           </section>
@@ -343,6 +316,52 @@ function App() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </section>
+        )}
+        
+        {activeSection === 'leaderboard' && (
+          <section className="leaderboard-section">
+            <h2>Leaderboard</h2>
+            {loading ? (
+              <div className="loading">Loading leaderboard...</div>
+            ) : error ? (
+              <div className="error">{error}</div>
+            ) : players.length === 0 ? (
+              <div className="no-data">No players available</div>
+            ) : (
+              <div className="leaderboard">
+                {[...players]
+                  .sort((a, b) => (Number(b.points) || 0) - (Number(a.points) || 0))
+                  .map((player, index) => (
+                    <div 
+                      key={`leaderboard-${index}`} 
+                      className={`leaderboard-row ${player.name === activePlayer?.name ? 'active-player' : ''}`}
+                    >
+                      <div className="rank">{index + 1}</div>
+                      <div className="player-info">
+                        <img 
+                          src={player.imgUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`} 
+                          alt={player.name || 'Player avatar'} 
+                          className="player-avatar"
+                          onError={(e) => {
+                            e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`;
+                          }}
+                        />
+                        <div className="player-details">
+                          <span className="player-name">{String(player.name || `Player ${index + 1}`)}</span>
+                          {player.team && (
+                            <span className="team-name">{getTeamName(player.team)}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="score">
+                        <i className="fas fa-star"></i>
+                        {Number(player.points) || 0}
+                      </div>
+                    </div>
+                  ))}
               </div>
             )}
           </section>
