@@ -145,4 +145,25 @@ export const fetchTeams = async () => {
     console.error('Error fetching teams:', error);
     throw error;
   }
+};
+
+export const fetchPlayer = async (playerId) => {
+  try {
+    const url = `${API_BASE_URL}/players/${playerId}?account=${ACCOUNT_ID}`;
+    const response = await fetch(url, {
+      headers: baseHeaders
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Player Error:', errorText);
+      throw new Error('Failed to fetch player');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching player:', error);
+    throw error;
+  }
 }; 

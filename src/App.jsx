@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { fetchMissions, fetchPrizes, fetchPlayers, fetchTeam, fetchTeams } from './services/api'
+import { fetchMissions, fetchPrizes, fetchPlayers, fetchTeam, fetchTeams, fetchPlayer } from './services/api'
 
 function App() {
   const [activeSection, setActiveSection] = useState('profile')
@@ -10,7 +10,13 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [teams, setTeams] = useState({})
-  const [activePlayer, setActivePlayer] = useState(null)
+  const [activePlayer, setActivePlayer] = useState(() => {
+    // Try to load the active player from localStorage
+    const savedPlayer = localStorage.getItem('activePlayer');
+    return savedPlayer ? JSON.parse(savedPlayer) : null;
+  })
+  const [showSignInModal, setShowSignInModal] = useState(false)
+  const [playerIdInput, setPlayerIdInput] = useState('')
 
   useEffect(() => {
     const loadData = async () => {
@@ -33,17 +39,20 @@ function App() {
         
         console.log('Players data structure:', JSON.stringify(playersData, null, 2))
         
-        // Find Johnny Marr and set as active player
-        const johnnyMarr = playersData.find(player => player.name === 'Johnny Marr')
-        setActivePlayer(johnnyMarr || playersData[0])
+        // If we have a saved active player, use that instead of Johnny Marr
+        const savedPlayer = localStorage.getItem('activePlayer');
+        const initialPlayer = savedPlayer ? JSON.parse(savedPlayer) : playersData.find(player => player.name === 'Johnny Marr');
+        setActivePlayer(initialPlayer || playersData[0]);
 
-        // Fetch missions for the active player
-        const missionsData = await fetchMissions(johnnyMarr?.id || playersData[0]?.id)
-        setMissions(missionsData || [])
+        // Fetch missions and prizes for the active player
+        if (initialPlayer) {
+          const missionsData = await fetchMissions(initialPlayer.id);
+          setMissions(missionsData || []);
 
-        // Fetch prizes for the active player
-        const prizesData = await fetchPrizes(johnnyMarr?.id || playersData[0]?.id)
-        setPrizes(prizesData || [])
+          const prizesData = await fetchPrizes(initialPlayer.id);
+          setPrizes(prizesData || []);
+        }
+        
         setPlayers(Array.isArray(playersData) ? playersData : [])
       } catch (err) {
         console.error('Error in loadData:', err)
@@ -61,6 +70,45 @@ function App() {
     if (typeof team === 'string') return team;
     if (team.id && teams[team.id]) return teams[team.id].name;
     return team.id || 'Unknown Team';
+  };
+
+  const handleSignIn = async () => {
+    if (!playerIdInput.trim()) {
+      setError('Please enter a valid Player ID');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch the player data from GameLayer
+      const playerData = await fetchPlayer(playerIdInput);
+      if (!playerData) {
+        setError('Player not found');
+        return;
+      }
+
+      // Fetch missions for the new player
+      const missionsData = await fetchMissions(playerIdInput);
+      setMissions(missionsData || []);
+
+      // Fetch prizes for the new player
+      const prizesData = await fetchPrizes(playerIdInput);
+      setPrizes(prizesData || []);
+
+      // Update the active player and save to localStorage
+      setActivePlayer(playerData);
+      localStorage.setItem('activePlayer', JSON.stringify(playerData));
+      
+      setShowSignInModal(false);
+      setPlayerIdInput('');
+    } catch (err) {
+      console.error('Error switching player:', err);
+      setError(err.message || 'Failed to switch player. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -116,13 +164,48 @@ function App() {
             </button>
           </nav>
           <div className="auth-section">
-            <button className="sign-in-button">
-              <i className="fas fa-sign-in-alt"></i>
-              Sign In
+            <button 
+              className="sign-in-button"
+              onClick={() => setShowSignInModal(true)}
+            >
+              {activePlayer ? 'Switch Player' : 'Sign In'}
             </button>
           </div>
         </div>
       </header>
+      
+      {showSignInModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>Switch Active Player</h2>
+            <div className="modal-content">
+              <input
+                type="text"
+                placeholder="Enter Player ID"
+                value={playerIdInput}
+                onChange={(e) => setPlayerIdInput(e.target.value)}
+                className="player-id-input"
+              />
+              {error && <p className="error-message">{error}</p>}
+              <div className="modal-actions">
+                <button onClick={handleSignIn} className="modal-button">
+                  Switch Player
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowSignInModal(false);
+                    setPlayerIdInput('');
+                    setError(null);
+                  }} 
+                  className="modal-button cancel"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <main className="content">
         {activeSection === 'profile' && (
