@@ -113,49 +113,62 @@ function App() {
       setLoading(true);
       setError(null);
       
-      // Try to create the player first
-      try {
-        await createPlayer(playerIdInput);
-        console.log('Player created successfully');
-      } catch (error) {
-        // If the player already exists, we can ignore the error
-        if (!error.message.includes('exists')) {
-          throw error;
-        }
-        console.log('Player already exists');
-      }
-
-      // Fetch the player data from GameLayer
+      // Fetch the player's data from GameLayer
       const playerData = await fetchPlayer(playerIdInput);
-      if (!playerData) {
-        setError('Player not found');
-        return;
-      }
-
-      // Ensure the player ID is set in the player data
-      const playerWithId = { ...playerData, id: playerIdInput };
-      console.log('Player data with ID:', playerWithId);
-
-      // Fetch missions for the new player
-      const missionsData = await fetchMissions(playerIdInput);
-      setMissions(missionsData || []);
-      localStorage.setItem('missions', JSON.stringify(missionsData || []));
-
-      // Fetch prizes for the new player
-      const prizesData = await fetchPrizes(playerIdInput);
-      setPrizes(prizesData || []);
-      localStorage.setItem('prizes', JSON.stringify(prizesData || []));
-
-      // Update the active player and save to localStorage
-      setActivePlayer(playerWithId);
-      setSelectedPlayer(playerWithId);
-      localStorage.setItem('activePlayer', JSON.stringify(playerWithId));
+      
+      // Set the player as active
+      setActivePlayer(playerData);
+      localStorage.setItem('activePlayer', JSON.stringify(playerData));
+      
+      // Fetch missions and prizes for the new active player
+      const [missionsData, prizesData] = await Promise.all([
+        fetchMissions(playerData.id),
+        fetchPrizes(playerData.id)
+      ]);
+      
+      setMissions(missionsData);
+      setPrizes(prizesData);
+      localStorage.setItem('missions', JSON.stringify(missionsData));
+      localStorage.setItem('prizes', JSON.stringify(prizesData));
       
       setShowSignInModal(false);
       setPlayerIdInput('');
-    } catch (err) {
-      console.error('Error switching player:', err);
-      setError(err.message || 'Failed to switch player. Please try again.');
+    } catch (error) {
+      console.error('Error signing in:', error);
+      setError('Failed to sign in. Please check the player ID and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePlayerSelect = async (player) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch the player's data from GameLayer
+      const playerData = await fetchPlayer(player.id);
+      
+      // Set the player as active
+      setActivePlayer(playerData);
+      localStorage.setItem('activePlayer', JSON.stringify(playerData));
+      
+      // Fetch missions and prizes for the new active player
+      const [missionsData, prizesData] = await Promise.all([
+        fetchMissions(playerData.id),
+        fetchPrizes(playerData.id)
+      ]);
+      
+      setMissions(missionsData);
+      setPrizes(prizesData);
+      localStorage.setItem('missions', JSON.stringify(missionsData));
+      localStorage.setItem('prizes', JSON.stringify(prizesData));
+      
+      // Switch to profile section
+      setActiveSection('profile');
+    } catch (error) {
+      console.error('Error switching player:', error);
+      setError('Failed to switch player. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -549,6 +562,12 @@ function App() {
                         </div>
                       )}
                     </div>
+                    <button 
+                      className="switch-player-button"
+                      onClick={() => handlePlayerSelect(player)}
+                    >
+                      Switch Player
+                    </button>
                   </div>
                 ))}
               </div>
