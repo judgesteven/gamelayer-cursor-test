@@ -22,13 +22,10 @@ function App() {
     const savedPlayer = localStorage.getItem('activePlayer');
     if (savedPlayer) {
       const playerData = JSON.parse(savedPlayer);
-      // Ensure the player ID is set in the player data
-      if (playerData && !playerData.id && playerData.name === 'Mike Joyce') {
-        playerData.id = '1-test-player';
-      }
       return playerData;
     }
-    return null;
+    // If no saved player, use judge.steven@gmail.com as default
+    return { id: 'judge.steven@gmail.com' };
   })
   const [showSignInModal, setShowSignInModal] = useState(false)
   const [playerIdInput, setPlayerIdInput] = useState('')
@@ -53,47 +50,43 @@ function App() {
         });
         setTeams(teamsMap);
         
-        // Fetch all players
-        const playersData = await fetchPlayers();
-        console.log('Players data structure:', JSON.stringify(playersData, null, 2))
-        
-        // If we have a saved active player, fetch their latest data from the API
-        const savedPlayer = localStorage.getItem('activePlayer');
-        if (savedPlayer) {
-          const playerData = JSON.parse(savedPlayer);
-          if (playerData && playerData.id) {
-            try {
-              const latestPlayerData = await fetchPlayer(playerData.id);
-              setActivePlayer(latestPlayerData);
-              localStorage.setItem('activePlayer', JSON.stringify(latestPlayerData));
-              
-              // Fetch missions and prizes for the active player using their ID
-              const missionsData = await fetchMissions(playerData.id);
-              setMissions(missionsData || []);
-              localStorage.setItem('missions', JSON.stringify(missionsData || []));
-
-              const prizesData = await fetchPrizes(playerData.id);
-              setPrizes(prizesData || []);
-              localStorage.setItem('prizes', JSON.stringify(prizesData || []));
-            } catch (err) {
-              console.warn('Failed to fetch latest player data:', err);
-              // If fetching latest data fails, use the saved data
-              setActivePlayer(playerData);
-            }
+        // If we have an active player, fetch their data
+        if (activePlayer?.id) {
+          try {
+            const playerData = await fetchPlayer(activePlayer.id);
+            setActivePlayer(playerData);
+            localStorage.setItem('activePlayer', JSON.stringify(playerData));
+            
+            // Fetch missions and prizes for the active player
+            const [missionsData, prizesData] = await Promise.all([
+              fetchMissions(playerData.id),
+              fetchPrizes(playerData.id)
+            ]);
+            
+            setMissions(missionsData);
+            setPrizes(prizesData);
+            localStorage.setItem('missions', JSON.stringify(missionsData));
+            localStorage.setItem('prizes', JSON.stringify(prizesData));
+          } catch (error) {
+            console.error('Error loading active player data:', error);
+            setError('Failed to load player data. Please try signing in again.');
           }
         }
         
-        setPlayers(Array.isArray(playersData) ? playersData : [])
+        // Fetch all players
+        const playersData = await fetchPlayers();
+        setPlayers(playersData);
+        
       } catch (err) {
-        console.error('Error in loadData:', err)
-        setError(err.message || 'Failed to load data. Please try again later.')
+        console.error('Error loading data:', err);
+        setError(err.message || 'Failed to load data. Please try again later.');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const getTeamName = (team) => {
     if (!team) return '';
