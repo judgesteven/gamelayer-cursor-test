@@ -555,12 +555,6 @@ function App() {
                         </div>
                       )}
                     </div>
-                    <button 
-                      className="switch-player-button"
-                      onClick={() => handlePlayerSelect(player)}
-                    >
-                      Switch Player
-                    </button>
                   </div>
                 ))}
               </div>
